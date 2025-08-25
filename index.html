@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Top-Down Shooter</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #111;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            cursor: none;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        canvas {
+            background: #222;
+            border: 2px solid #444;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px #000;
+        }
+        
+        #highScoreUI {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 100;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px #000;
+            text-align: right;
+        }
+        
+        #weaponSelector {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            z-index: 100;
+            font-size: 14px;
+            background: rgba(0,0,0,0.8);
+            padding: 10px;
+            border: 1px solid #666;
+            border-radius: 5px;
+        }
+        
+        #weaponSelector button {
+            display: block;
+            width: 140px;
+            margin: 2px 0;
+            padding: 5px;
+            background: #333;
+            color: white;
+            border: 1px solid #666;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+        }
+        
+        #weaponSelector button.selected {
+            background: #ff0040;
+            border-color: #ff4060;
+        }
+        
+        #weaponSelector button.secret {
+            background: #4a0080;
+            border-color: #6a00a0;
+            color: #ffff00;
+            text-shadow: 0 0 5px #ffff00;
+        }
+        
+        #weaponSelector button.secret.selected {
+            background: #6a00a0;
+            border-color: #8a00c0;
+        }
+        
+        #weaponSelector button.fireball {
+            background: #ff4500;
+            border-color: #ff6500;
+            color: #ffff00;
+            text-shadow: 0 0 5px #ff4500;
+        }
+        
+        #weaponSelector button.fireball.selected {
+            background: #ff6500;
+            border-color: #ff8500;
+        }
+        
+        #weaponSelector button.deletion {
+            background: #000080;
+            border-color: #0000ff;
+            color: #ffffff;
+            text-shadow: 0 0 8px #0000ff;
+            animation: deletionPulse 2s ease-in-out infinite;
+        }
+        
+        #weaponSelector button.deletion.selected {
+            background: #0000ff;
+            border-color: #4040ff;
+        }
+        
+        @keyframes deletionPulse {
+            0%, 100% { box-shadow: 0 0 5px #0000ff; }
+            50% { box-shadow: 0 0 15px #0000ff; }
+        }
+        
+        #weaponSelector button:disabled {
+            background: #222;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        #scytheStatus {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 100;
+            font-size: 18px;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+            display: none;
+        }
+        
+        #newGunFlash {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #ffff00;
+            text-shadow: 0 0 20px #ffff00;
+            z-index: 400;
+            display: none;
+            animation: flashPulse 1s ease-in-out;
+        }
+        
+        #bossWarning {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 64px;
+            font-weight: bold;
+            color: #ff0000;
+            text-shadow: 0 0 30px #ff0000;
+            z-index: 400;
+            display: none;
+            animation: bossFlash 2s ease-in-out;
+        }
+        
+        #upgradeFlash {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 72px;
+            font-weight: bold;
+            color: #00ff00;
+            text-shadow: 0 0 30px #00ff00;
+            z-index: 400;
+            display: none;
+            animation: upgradeFlash 1s ease-in-out;
+        }
+        
+        #dialogue {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            padding: 20px;
+            border: 2px solid #ff0000;
+            font-size: 24px;
+            color: #fff;
+            max-width: 800px;
+            text-align: center;
+            display: none;
+            z-index: 500;
+        }
+        
+        @keyframes flashPulse {
+            0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+        }
+        
+        @keyframes bossFlash {
+            0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            20%, 80% { opacity: 1; transform: translate(-50%, -50%) scale(1.0); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+        }
+        
+        @keyframes upgradeFlash {
+            0%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+        }
+        
+        .screen-shake {
+            animation: shake 0.5s ease-in-out infinite;
+        }
+        
+        .screen-red {
+            background: rgba(255,0,0,0.3) !important;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        #crosshair {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 200;
+        }
+        
+        #crosshair::before,
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            background: #ff0040;
+            box-shadow: 0 0 10px #ff0040;
+        }
+        
+        #crosshair::before {
+            width: 20px;
+            height: 2px;
+            top: 9px;
+            left: 0;
+        }
+        
+        #crosshair::after {
+            width: 2px;
+            height: 20px;
+            top: 0;
+            left: 9px;
+        }
+        
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-size: 24px;
+            background: rgba(0,0,0,0.8);
+            padding: 30px;
+            border: 2px solid #ff0040;
+            display: none;
+            z-index: 300;
+        }
+        
+        button {
+            background: #ff0040;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        button:hover {
+            background: #ff4060;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1200" height="800"></canvas>
+        <div id="crosshair"></div>
+        <div id="ui">
+            <div>Health: <span id="health">100</span></div>
+            <div>Score: <span id="score">0</span></div>
+            <div>Ammo: <span id="ammo">30</span></div>
+            <div id="bossHealthDisplay" style="display: none; color: #ff0000; font-size: 20px; margin-top: 10px;">
+                Boss Health: <span id="bossHealth">0</span>
+            </div>
+        </div>
+        <div id="highScoreUI">
+            <div>High Score: <span id="highScore">0</span></div>
+        </div>
+        <div id="weaponSelector">
+            <div style="margin-bottom: 5px; color: #fff;">Weapons:</div>
+            <button id="weapon0" class="selected" onclick="selectWeapon(0)">PISTOL</button>
+            <button id="weapon1" disabled onclick="selectWeapon(1)">SHOTGUN</button>
+            <button id="weapon2" disabled onclick="selectWeapon(2)">UZI</button>
+            <button id="weapon3" disabled onclick="selectWeapon(3)">REVOLVER</button>
+            <button id="weapon4" disabled onclick="selectWeapon(4)">ASSAULT RIFLE</button>
+            <button id="weapon5" disabled onclick="selectWeapon(5)">MINIGUN</button>
+            <button id="weapon6" disabled onclick="selectWeapon(6)" style="display: none;">REALGUN</button>
+            <button id="weapon7" disabled onclick="selectWeapon(7)" style="display: none;">SWORD OF SWORDS</button>
+            <button id="weapon8" disabled onclick="selectWeapon(8)" style="display: none;">FIREBALL!</button>
+            <button id="weapon9" disabled onclick="selectWeapon(9)" style="display: none;">THE STAFF OF DELETION!</button>
+        </div>
+        <div id="scytheStatus">🗡️ SCYTHE ACTIVE</div>
+        <div id="newGunFlash">NEW GUN!</div>
+        <div id="bossWarning">BOSS INCOMING!</div>
+        <div id="upgradeFlash">UPGRADE!</div>
+        <div id="dialogue"></div>
+        <div id="gameOver">
+            <h2>GAME OVER</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+            <p id="newHighScore" style="display: none; color: #ffff00;">🎉 NEW HIGH SCORE! 🎉</p>
+            <button onclick="restartGame()">RESTART</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const crosshair = document.getElementById('crosshair');
+        
+        // High score system (in-memory only)
+        let highScore = 0;
+        
+        // Weapon system
+        const weapons = [
+            { name: 'PISTOL', damage: 25, fireRate: 200, ammo: 30, maxAmmo: 30, reloadTime: 2000, spread: 0, burstCount: 1, auto: false, unlocked: true },
+            { name: 'SHOTGUN', damage: 15, fireRate: 800, ammo: 8, maxAmmo: 8, reloadTime: 3000, spread: 0.5, burstCount: 8, auto: false, unlocked: false },
+            { name: 'UZI', damage: 20, fireRate: 100, ammo: 25, maxAmmo: 25, reloadTime: 2500, spread: 0.1, burstCount: 5, auto: false, unlocked: false },
+            { name: 'REVOLVER', damage: 100, fireRate: 1200, ammo: 6, maxAmmo: 6, reloadTime: 4000, spread: 0, burstCount: 1, auto: false, unlocked: false },
+            { name: 'ASSAULT RIFLE', damage: 30, fireRate: 120, ammo: 100, maxAmmo: 100, reloadTime: 3500, spread: 0.05, burstCount: 1, auto: true, unlocked: false },
+            { name: 'MINIGUN', damage: 25, fireRate: 50, ammo: -1, maxAmmo: -1, reloadTime: 0, spread: 0.15, burstCount: 1, auto: true, unlocked: false },
+            { name: 'REALGUN', damage: 35, fireRate: 300, ammo: -1, maxAmmo: -1, reloadTime: 0, spread: 0, burstCount: 1, auto: true, unlocked: false, special: 'omnidirection' },
+            { name: 'SWORD OF SWORDS', damage: 50, fireRate: 300, ammo: -1, maxAmmo: -1, reloadTime: 0, spread: 0, burstCount: 1, auto: true, unlocked: false, special: 'sword' },
+            { name: 'FIREBALL!', damage: 50, fireRate: 600, ammo: -1, maxAmmo: -1, reloadTime: 0, spread: 0, burstCount: 1, auto: false, unlocked: false, special: 'fireball' },
+            { name: 'THE STAFF OF DELETION!', damage: 300, fireRate: 5000, ammo: -1, maxAmmo: -1, reloadTime: 0, spread: 0, burstCount: 1, auto: false, unlocked: false, special: 'deletion' }
+        ];
+        
+        let currentWeaponIndex = 0;
+        let lastScoreCheck = 0;
+        let bossSpawned = false;
+        let secondBossSpawned = false;
+        let boss = null;
+        let fireZones = [];
+        let dialogueActive = false;
+        let healthUpgraded = false;
+        let deletionZones = [];
+        let enemySlowEndTime = 0;
+        let deletionCooldownEndTime = 0;
+        let scytheUnlocked = false;
+        let scytheAngle = 0;
+        
+        // Game state
+        let gameRunning = true;
+        let mouse = { x: 0, y: 0 };
+        let lastTime = 0;
+        
+        // Player
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            width: 20,
+            height: 20,
+            speed: 200,
+            health: 100,
+            maxHealth: 100,
+            angle: 0,
+            weapon: { ...weapons[0] },
+            lastShot: 0,
+            reloading: false,
+            reloadStart: 0,
+            shooting: false
+        };
+        
+        // Game objects arrays
+        let enemies = [];
+        let bullets = [];
+        let swords = [];
+        let fireballs = [];
+        let obstacles = [];
+        let bloodSplatters = [];
+        let medkits = [];
+        let score = 0;
+        let gameStartTime = 0;
+        let lastMedkitSpawn = 0;
+        
+        // Input handling
+        const keys = {};
+        
+        // Generate random obstacles
+        function generateObstacles() {
+            obstacles = [];
+            for (let i = 0; i < 15; i++) {
+                let obstacle;
+                do {
+                    obstacle = {
+                        x: Math.random() * (canvas.width - 100) + 50,
+                        y: Math.random() * (canvas.height - 100) + 50,
+                        width: Math.random() * 80 + 40,
+                        height: Math.random() * 80 + 40
+                    };
+                } while (distance(obstacle.x + obstacle.width/2, obstacle.y + obstacle.height/2, 
+                                player.x, player.y) < 100);
+                obstacles.push(obstacle);
+            }
+        }
+        
+        // Utility functions
+        function distance(x1, y1, x2, y2) {
+            return Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+        }
+        
+        function angle(x1, y1, x2, y2) {
+            return Math.atan2(y2 - y1, x2 - x1);
+        }
+        
+        function rectCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+        
+        function circleRectCollision(circle, rect) {
+            const dx = Math.max(rect.x - circle.x, 0, circle.x - (rect.x + rect.width));
+            const dy = Math.max(rect.y - circle.y, 0, circle.y - (rect.y + rect.height));
+            return (dx * dx + dy * dy) <= (circle.radius * circle.radius);
+        }
+        
+        // Dialogue system
+        function showDialogue(text, callback) {
+            if (dialogueActive) return;
+            
+            dialogueActive = true;
+            const dialogueEl = document.getElementById('dialogue');
+            dialogueEl.style.display = 'block';
+            dialogueEl.textContent = '';
+            
+            let i = 0;
+            const typeInterval = setInterval(() => {
+                dialogueEl.textContent += text[i];
+                i++;
+                
+                // Special effects for dramatic parts
+                if (text.substring(0, i).includes('DESTROOYY YOUUU!!!')) {
+                    canvas.classList.add('screen-red', 'screen-shake');
+                    setTimeout(() => {
+                        canvas.classList.remove('screen-red', 'screen-shake');
+                    }, 1000);
+                }
+                
+                if (i >= text.length) {
+                    clearInterval(typeInterval);
+                    setTimeout(() => {
+                        dialogueEl.style.display = 'none';
+                        dialogueActive = false;
+                        if (callback) callback();
+                    }, 2000);
+                }
+            }, 50);
+        }
+        
+        // Medkit spawning
+        function spawnMedkit() {
+            let medkit;
+            do {
+                medkit = {
+                    x: Math.random() * (canvas.width - 100) + 50,
+                    y: Math.random() * (canvas.height - 100) + 50,
+                    width: 20,
+                    height: 20,
+                    healAmount: Math.floor(player.maxHealth / 2)
+                };
+            } while (
+                distance(medkit.x + medkit.width/2, medkit.y + medkit.height/2, 
+                        player.x + player.width/2, player.y + player.height/2) < 80 ||
+                obstacles.some(obstacle => rectCollision(medkit, obstacle))
+            );
+            
+            medkits.push(medkit);
+        }
+        
+        function spawnBoss(isSecondBoss = false) {
+            const bossHealth = isSecondBoss ? 5000 : 1000;
+            const bossSize = isSecondBoss ? 150 : 100;
+            
+            boss = {
+                x: canvas.width / 2 - bossSize/2,
+                y: -bossSize - 50,
+                width: bossSize,
+                height: bossSize,
+                speed: isSecondBoss ? 40 : 50,
+                health: bossHealth,
+                maxHealth: bossHealth,
+                lastAttack: 0,
+                attackRate: isSecondBoss ? 300 : 500,
+                phase: 1,
+                isSecondBoss: isSecondBoss
+            };
+            
+            if (isSecondBoss) {
+                enemies = [];
+                
+                showDialogue("You killed my brother?!?!?11?// now u wil have to go thruu mee!!!11 i wil DESTROOYY YOUUU!!!", () => {
+                    const warning = document.getElementById('bossWarning');
+                    warning.textContent = 'BIG BOSS INCOMING!';
+                    warning.style.display = 'block';
+                    setTimeout(() => {
+                        warning.style.display = 'none';
+                        warning.textContent = 'BOSS INCOMING!';
+                    }, 2000);
+                });
+            } else {
+                const warning = document.getElementById('bossWarning');
+                warning.style.display = 'block';
+                setTimeout(() => {
+                    warning.style.display = 'none';
+                }, 2000);
+            }
+            
+            document.getElementById('bossHealthDisplay').style.display = 'block';
+        }
+        
+        // Enemy spawning
+        function spawnEnemy() {
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+            
+            switch(side) {
+                case 0: x = Math.random() * canvas.width; y = -30; break;
+                case 1: x = canvas.width + 30; y = Math.random() * canvas.height; break;
+                case 2: x = Math.random() * canvas.width; y = canvas.height + 30; break;
+                case 3: x = -30; y = Math.random() * canvas.height; break;
+            }
+            
+            // 10% chance for armed enemy after scythe unlock
+            const isArmed = scytheUnlocked && Math.random() < 0.01;
+            
+            enemies.push({
+                x: x,
+                y: y,
+                width: 18,
+                height: 18,
+                speed: isArmed ? 40 : Math.random() * 80 + 60,
+                health: isArmed ? 1000 : (Math.random() > 0.7 ? 50 : 25),
+                maxHealth: isArmed ? 1000 : (Math.random() > 0.7 ? 50 : 25),
+                lastAttack: 0,
+                attackRate: isArmed ? 700 : 1000,
+                armed: isArmed
+            });
+        }
+        
+        // Create omnidirection bullets
+        function createOmnidirectionBullets(x, y, damage = 35, count = 16) {
+            const angleStep = (Math.PI * 2) / count;
+            for (let i = 0; i < count; i++) {
+                const bulletAngle = angleStep * i;
+                bullets.push({
+                    x: x,
+                    y: y,
+                    dx: Math.cos(bulletAngle) * 400,
+                    dy: Math.sin(bulletAngle) * 400,
+                    width: 6,
+                    height: 6,
+                    damage: damage,
+                    fromPlayer: true,
+                    special: true
+                });
+            }
+        }
+        
+        // Create fire zone
+        function createFireZone(x, y) {
+            fireZones.push({
+                x: x,
+                y: y,
+                radius: 80,
+                damage: 5,
+                duration: 5000,
+                startTime: Date.now(),
+                particles: []
+            });
+        }
+        
+        // Shooting
+        function shoot() {
+            if (!gameRunning || player.reloading || dialogueActive) return;
+            
+            const now = Date.now();
+            
+            // Handle Staff of Deletion
+            if (player.weapon.special === 'deletion') {
+                if (now < deletionCooldownEndTime) return;
+                
+                const deletionZone = {
+                    x: mouse.x,
+                    y: mouse.y,
+                    radius: 200,
+                    startTime: now,
+                    duration: 1500
+                };
+                deletionZones.push(deletionZone);
+                
+                let enemiesKilled = 0;
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    const enemy = enemies[i];
+                    const enemyCenter = { x: enemy.x + enemy.width/2, y: enemy.y + enemy.height/2 };
+                    
+                    if (distance(deletionZone.x, deletionZone.y, enemyCenter.x, enemyCenter.y) <= deletionZone.radius) {
+                        enemy.health -= 300;
+                        
+                        if (enemy.health <= 0) {
+                            bloodSplatters.push({
+                                x: enemyCenter.x,
+                                y: enemyCenter.y,
+                                size: Math.random() * 20 + 15,
+                                alpha: 1,
+                                decay: 0.005,
+                                special: true
+                            });
+                            
+                            enemies.splice(i, 1);
+                            score += enemy.armed ? 50 : 25;
+                            enemiesKilled++;
+                        }
+                    }
+                }
+                
+                if (enemiesKilled > 0) {
+                    enemySlowEndTime = now + 3000;
+                }
+                
+                if (boss) {
+                    const bossCenter = { x: boss.x + boss.width/2, y: boss.y + boss.height/2 };
+                    if (distance(deletionZone.x, deletionZone.y, bossCenter.x, bossCenter.y) <= deletionZone.radius + boss.width/2) {
+                        boss.health -= 300;
+                    }
+                }
+                
+                deletionCooldownEndTime = now + 5000;
+                checkWeaponUnlocks();
+                return;
+            }
+            
+            if (now - player.lastShot < player.weapon.fireRate) return;
+            if (player.weapon.ammo === 0 && player.weapon.ammo !== -1) return;
+            
+            // Handle fireball
+            if (player.weapon.special === 'fireball') {
+                const fireballAngle = angle(player.x + player.width/2, player.y + player.height/2, mouse.x, mouse.y);
+                fireballs.push({
+                    x: player.x + player.width/2,
+                    y: player.y + player.height/2,
+                    dx: Math.cos(fireballAngle) * 300,
+                    dy: Math.sin(fireballAngle) * 300,
+                    width: 12,
+                    height: 12,
+                    damage: 50,
+                    fromPlayer: true
+                });
+                player.lastShot = now;
+                return;
+            }
+            
+            // Handle sword of swords
+            if (player.weapon.special === 'sword') {
+                const swordAngle = angle(player.x + player.width/2, player.y + player.height/2, mouse.x, mouse.y);
+                swords.push({
+                    x: player.x + player.width/2,
+                    y: player.y + player.height/2,
+                    dx: Math.cos(swordAngle) * 300,
+                    dy: Math.sin(swordAngle) * 300,
+                    width: 8,
+                    height: 20,
+                    angle: swordAngle,
+                    damage: 150,
+                    fromPlayer: true
+                });
+                player.lastShot = now;
+                return;
+            }
+            
+            // Handle realgun omnidirection
+            if (player.weapon.special === 'omnidirection') {
+                createOmnidirectionBullets(
+                    player.x + player.width/2, 
+                    player.y + player.height/2, 
+                    player.weapon.damage,
+                    20
+                );
+                player.lastShot = now;
+                
+                if (player.weapon.ammo > 0) {
+                    player.weapon.ammo--;
+                }
+                
+                if (player.weapon.ammo === 0) {
+                    reload();
+                }
+                return;
+            }
+            
+            const baseAngle = angle(player.x + player.width/2, player.y + player.height/2, mouse.x, mouse.y);
+            
+            for (let i = 0; i < player.weapon.burstCount; i++) {
+                let bulletAngle = baseAngle;
+                
+                if (player.weapon.spread > 0) {
+                    if (player.weapon.burstCount > 1) {
+                        const spreadRange = player.weapon.spread;
+                        bulletAngle = baseAngle + (Math.random() - 0.5) * spreadRange;
+                    } else {
+                        bulletAngle = baseAngle + (Math.random() - 0.5) * player.weapon.spread;
+                    }
+                }
+                
+                bullets.push({
+                    x: player.x + player.width/2,
+                    y: player.y + player.height/2,
+                    dx: Math.cos(bulletAngle) * 500,
+                    dy: Math.sin(bulletAngle) * 500,
+                    width: 4,
+                    height: 4,
+                    damage: player.weapon.damage,
+                    fromPlayer: true
+                });
+            }
+            
+            player.lastShot = now;
+            
+            if (player.weapon.ammo > 0) {
+                player.weapon.ammo--;
+            }
+            
+            if (player.weapon.ammo === 0 && player.weapon.ammo !== -1) {
+                reload();
+            }
+        }
+        
+        function reload() {
+            if (player.reloading || player.weapon.ammo === player.weapon.maxAmmo || player.weapon.ammo === -1) return;
+            
+            player.reloading = true;
+            player.reloadStart = Date.now();
+            
+            setTimeout(() => {
+                player.weapon.ammo = player.weapon.maxAmmo;
+                player.reloading = false;
+            }, player.weapon.reloadTime);
+        }
+        
+        function selectWeapon(index) {
+            if (weapons[index].unlocked && index !== currentWeaponIndex) {
+                currentWeaponIndex = index;
+                player.weapon = { ...weapons[index] };
+                player.reloading = false;
+                
+                document.querySelectorAll('#weaponSelector button').forEach((btn, i) => {
+                    btn.classList.toggle('selected', i === index);
+                });
+            }
+        }
+        
+        function checkWeaponUnlocks() {
+            // Regular weapon unlocks
+            const newWeaponIndex = Math.min(Math.floor(score / 100), 5);
+            
+            if (newWeaponIndex > lastScoreCheck && !weapons[newWeaponIndex].unlocked) {
+                weapons[newWeaponIndex].unlocked = true;
+                document.getElementById(`weapon${newWeaponIndex}`).disabled = false;
+                
+                selectWeapon(newWeaponIndex);
+                
+                const flash = document.getElementById('newGunFlash');
+                flash.style.display = 'block';
+                setTimeout(() => {
+                    flash.style.display = 'none';
+                }, 1000);
+                
+                lastScoreCheck = newWeaponIndex;
+            }
+            
+            // Scythe unlock at 20000 score
+            if (score >= 20000 && !scytheUnlocked) {
+                scytheUnlocked = true;
+                document.getElementById('scytheStatus').style.display = 'block';
+                
+                const flash = document.getElementById('upgradeFlash');
+                flash.textContent = 'SCYTHE UNLOCKED!';
+                flash.style.display = 'block';
+                setTimeout(() => {
+                    flash.style.display = 'none';
+                    flash.textContent = 'UPGRADE!';
+                }, 2000);
+            }
+            
+            // Secret weapon unlocks
+            if (score >= 800 && !weapons[6].unlocked) {
+                weapons[6].unlocked = true;
+                document.getElementById('weapon6').disabled = false;
+                document.getElementById('weapon6').style.display = 'block';
+                document.getElementById('weapon6').classList.add('secret');
+                
+                selectWeapon(6);
+                
+                const flash = document.getElementById('newGunFlash');
+                flash.textContent = 'SECRET GUN UNLOCKED!';
+                flash.style.display = 'block';
+                setTimeout(() => {
+                    flash.style.display = 'none';
+                    flash.textContent = 'NEW GUN!';
+                }, 1500);
+            }
+            
+            if (score >= 3000 && !weapons[8].unlocked) {
+                weapons[8].unlocked = true;
+                document.getElementById('weapon8').disabled = false;
+                document.getElementById('weapon8').style.display = 'block';
+                document.getElementById('weapon8').classList.add('fireball');
+                
+                selectWeapon(8);
+                
+                const flash = document.getElementById('newGunFlash');
+                flash.textContent = 'FIREBALL UNLOCKED!';
+                flash.style.display = 'block';
+                setTimeout(() => {
+                    flash.style.display = 'none';
+                    flash.textContent = 'NEW GUN!';
+                }, 1500);
+            }
+            
+            if (score >= 10000 && !weapons[9].unlocked) {
+                weapons[9].unlocked = true;
+                document.getElementById('weapon9').disabled = false;
+                document.getElementById('weapon9').style.display = 'block';
+                document.getElementById('weapon9').classList.add('deletion');
+                
+                selectWeapon(9);
+                
+                const flash = document.getElementById('newGunFlash');
+                flash.textContent = 'THE STAFF OF DELETION UNLOCKED!';
+                flash.style.display = 'block';
+                setTimeout(() => {
+                    flash.style.display = 'none';
+                    flash.textContent = 'NEW GUN!';
+                }, 2000);
+            }
+            
+            if (score >= 1000 && !bossSpawned) {
+                bossSpawned = true;
+                spawnBoss();
+            }
+            
+            if (score >= 5000 && !secondBossSpawned) {
+                secondBossSpawned = true;
+                spawnBoss(true);
+            }
+        }
+        
+        // Update game logic
+        function update(deltaTime) {
+            if (!gameRunning || dialogueActive) return;
+            
+            const currentTime = Date.now();
+            
+            // Update scythe angle
+            if (scytheUnlocked) {
+                scytheAngle += 15 * deltaTime; // Fast spinning
+            }
+            
+            if (currentTime - lastMedkitSpawn > 180000) {
+                spawnMedkit();
+                lastMedkitSpawn = currentTime;
+            }
+            
+            // Move player
+            let newX = player.x;
+            let newY = player.y;
+            
+            if (keys['w'] || keys['ArrowUp']) newY -= player.speed * deltaTime;
+            if (keys['s'] || keys['ArrowDown']) newY += player.speed * deltaTime;
+            if (keys['a'] || keys['ArrowLeft']) newX -= player.speed * deltaTime;
+            if (keys['d'] || keys['ArrowRight']) newX += player.speed * deltaTime;
+            
+            const playerRect = { x: newX, y: newY, width: player.width, height: player.height };
+            let canMove = true;
+            
+            for (let obstacle of obstacles) {
+                if (rectCollision(playerRect, obstacle)) {
+                    canMove = false;
+                    break;
+                }
+            }
+            
+            if (canMove) {
+                player.x = Math.max(0, Math.min(canvas.width - player.width, newX));
+                player.y = Math.max(0, Math.min(canvas.height - player.height, newY));
+            }
+            
+            // Check medkit collection
+            medkits.forEach((medkit, medkitIndex) => {
+                if (rectCollision(player, medkit)) {
+                    player.health = Math.min(player.maxHealth, player.health + medkit.healAmount);
+                    medkits.splice(medkitIndex, 1);
+                }
+            });
+            
+            player.angle = angle(player.x + player.width/2, player.y + player.height/2, mouse.x, mouse.y);
+            
+            // Update deletion zones
+            deletionZones.forEach((deletionZone, zoneIndex) => {
+                const elapsed = currentTime - deletionZone.startTime;
+                if (elapsed > deletionZone.duration) {
+                    deletionZones.splice(zoneIndex, 1);
+                }
+            });
+            
+            // Update fire zones
+            fireZones.forEach((fireZone, fireIndex) => {
+                const elapsed = currentTime - fireZone.startTime;
+                
+                if (elapsed > fireZone.duration) {
+                    fireZones.splice(fireIndex, 1);
+                    return;
+                }
+                
+                enemies.forEach((enemy, enemyIndex) => {
+                    const enemyCenter = { x: enemy.x + enemy.width/2, y: enemy.y + enemy.height/2 };
+                    
+                    if (distance(fireZone.x, fireZone.y, enemyCenter.x, enemyCenter.y) <= fireZone.radius) {
+                        enemy.health -= fireZone.damage * deltaTime;
+                        
+                        if (enemy.health <= 0) {
+                            enemies.splice(enemyIndex, 1);
+                            score += enemy.armed ? 20 : 10;
+                            checkWeaponUnlocks();
+                            
+                            bloodSplatters.push({
+                                x: enemy.x + enemy.width/2,
+                                y: enemy.y + enemy.height/2,
+                                size: Math.random() * 10 + 5,
+                                alpha: 1,
+                                decay: 0.01
+                            });
+                        }
+                    }
+                });
+                
+                if (boss) {
+                    const bossCenter = { x: boss.x + boss.width/2, y: boss.y + boss.height/2 };
+                    if (distance(fireZone.x, fireZone.y, bossCenter.x, bossCenter.y) <= fireZone.radius + boss.width/2) {
+                        boss.health -= fireZone.damage * deltaTime;
+                    }
+                }
+                
+                if (Math.random() < 0.3) {
+                    fireZone.particles.push({
+                        x: fireZone.x + (Math.random() - 0.5) * fireZone.radius * 2,
+                        y: fireZone.y + (Math.random() - 0.5) * fireZone.radius * 2,
+                        life: 1,
+                        decay: 0.02
+                    });
+                }
+                
+                fireZone.particles.forEach((particle, particleIndex) => {
+                    particle.life -= particle.decay;
+                    if (particle.life <= 0) {
+                        fireZone.particles.splice(particleIndex, 1);
+                    }
+                });
+            });
+            
+            // Update boss
+            if (boss) {
+                if (boss.y < 50) {
+                    boss.y += boss.speed * deltaTime;
+                } else {
+                    const dx = (player.x + player.width/2) - (boss.x + boss.width/2);
+                    const dy = (player.y + player.height/2) - (boss.y + boss.height/2);
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist > 150) {
+                        boss.x += (dx / dist) * boss.speed * deltaTime;
+                        boss.y += (dy / dist) * boss.speed * deltaTime;
+                    }
+                    
+                    if (Date.now() - boss.lastAttack > boss.attackRate) {
+                        const bossAngle = angle(boss.x + boss.width/2, boss.y + boss.height/2, 
+                                              player.x + player.width/2, player.y + player.height/2);
+                        
+                        const bulletCount = boss.isSecondBoss ? 5 : 3;
+                        for (let i = 0; i < bulletCount; i++) {
+                            const spreadAngle = bossAngle + (i - Math.floor(bulletCount/2)) * 0.2;
+                            bullets.push({
+                                x: boss.x + boss.width/2,
+                                y: boss.y + boss.height/2,
+                                dx: Math.cos(spreadAngle) * (boss.isSecondBoss ? 250 : 200),
+                                dy: Math.sin(spreadAngle) * (boss.isSecondBoss ? 250 : 200),
+                                width: boss.isSecondBoss ? 8 : 6,
+                                height: boss.isSecondBoss ? 8 : 6,
+                                damage: boss.isSecondBoss ? 30 : 20,
+                                fromPlayer: false,
+                                boss: true
+                            });
+                        }
+                        boss.lastAttack = Date.now();
+                    }
+                }
+                
+                document.getElementById('bossHealth').textContent = Math.max(0, boss.health);
+                
+                if (boss.health <= 0) {
+                    if (boss.isSecondBoss) {
+                        score += 1000;
+                        
+                        const upgradeFlash = document.getElementById('upgradeFlash');
+                        upgradeFlash.style.display = 'block';
+                        setTimeout(() => {
+                            upgradeFlash.style.display = 'none';
+                        }, 1000);
+                        
+                        if (!healthUpgraded) {
+                            healthUpgraded = true;
+                            player.maxHealth = 1000;
+                            player.health = 1000;
+                        }
+                        
+                        showDialogue("wait til u go thru my older older brother!");
+                        
+                    } else {
+                        score += 500;
+                        
+                        if (!weapons[7].unlocked) {
+                            weapons[7].unlocked = true;
+                            document.getElementById('weapon7').disabled = false;
+                            document.getElementById('weapon7').style.display = 'block';
+                            document.getElementById('weapon7').classList.add('secret');
+                            
+                            selectWeapon(7);
+                            
+                            const flash = document.getElementById('newGunFlash');
+                            flash.textContent = 'SWORD OF SWORDS UNLOCKED!';
+                            flash.style.display = 'block';
+                            setTimeout(() => {
+                                flash.style.display = 'none';
+                                flash.textContent = 'NEW GUN!';
+                            }, 2000);
+                        }
+                    }
+                    
+                    boss = null;
+                    document.getElementById('bossHealthDisplay').style.display = 'none';
+                }
+            }
+            
+            // Spawn enemies
+            if (Math.random() < 0.02 + score * 0.0001 && !(boss && boss.isSecondBoss)) {
+                spawnEnemy();
+            }
+            
+            // Scythe collision with enemies
+            if (scytheUnlocked) {
+                const scytheRadius = 60;
+                const playerCenter = { x: player.x + player.width/2, y: player.y + player.height/2 };
+                
+                enemies.forEach((enemy, enemyIndex) => {
+                    const enemyCenter = { x: enemy.x + enemy.width/2, y: enemy.y + enemy.height/2 };
+                    const dist = distance(playerCenter.x, playerCenter.y, enemyCenter.x, enemyCenter.y);
+                    
+                    if (dist <= scytheRadius) {
+                        // One-hit kill for regular enemies, damage armed enemies
+                        if (enemy.armed) {
+                            enemy.health -= 500; // Still powerful against armed enemies
+                            if (enemy.health <= 0) {
+                                enemies.splice(enemyIndex, 1);
+                                score += 40; // Double score for armed enemies
+                                checkWeaponUnlocks();
+                            }
+                        } else {
+                            enemies.splice(enemyIndex, 1);
+                            score += 20; // Double score
+                            checkWeaponUnlocks();
+                        }
+                        
+                        bloodSplatters.push({
+                            x: enemyCenter.x,
+                            y: enemyCenter.y,
+                            size: Math.random() * 15 + 10,
+                            alpha: 1,
+                            decay: 0.008
+                        });
+                    }
+                });
+            }
+            
+            // Update enemies
+            enemies.forEach((enemy, enemyIndex) => {
+                const dx = (player.x + player.width/2) - (enemy.x + enemy.width/2);
+                const dy = (player.y + player.height/2) - (enemy.y + enemy.height/2);
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist > 0) {
+                    let enemySpeed = enemy.speed;
+                    if (currentTime < enemySlowEndTime) {
+                        enemySpeed *= 0.2;
+                    }
+                    
+                    let newEnemyX = enemy.x + (dx / dist) * enemySpeed * deltaTime;
+                    let newEnemyY = enemy.y + (dy / dist) * enemySpeed * deltaTime;
+                    
+                    const enemyRect = { x: newEnemyX, y: newEnemyY, width: enemy.width, height: enemy.height };
+                    let enemyCanMove = true;
+                    
+                    for (let obstacle of obstacles) {
+                        if (rectCollision(enemyRect, obstacle)) {
+                            enemyCanMove = false;
+                            break;
+                        }
+                    }
+                    
+                    if (enemyCanMove) {
+                        enemy.x = newEnemyX;
+                        enemy.y = newEnemyY;
+                    }
+                }
+                
+                // Armed enemy shooting
+                if (enemy.armed && Date.now() - enemy.lastAttack > enemy.attackRate) {
+                    const enemyAngle = angle(enemy.x + enemy.width/2, enemy.y + enemy.height/2, 
+                                           player.x + player.width/2, player.y + player.height/2);
+                    
+                    bullets.push({
+                        x: enemy.x + enemy.width/2,
+                        y: enemy.y + enemy.height/2,
+                        dx: Math.cos(enemyAngle) * 300,
+                        dy: Math.sin(enemyAngle) * 300,
+                        width: 6,
+                        height: 6,
+                        damage: 20, // High damage bullets
+                        fromPlayer: false,
+                        armed: true
+                    });
+                    
+                    enemy.lastAttack = Date.now();
+                }
+                
+                // Melee attack
+                if (dist < 30 && Date.now() - enemy.lastAttack > enemy.attackRate) {
+                    player.health -= enemy.armed ? 30 : 10;
+                    enemy.lastAttack = Date.now();
+                    
+                    if (player.health <= 0) {
+                        gameOver();
+                    }
+                }
+            });
+            
+            // Update fireballs
+            fireballs.forEach((fireball, fireballIndex) => {
+                fireball.x += fireball.dx * deltaTime;
+                fireball.y += fireball.dy * deltaTime;
+                
+                if (fireball.x < -50 || fireball.x > canvas.width + 50 || fireball.y < -50 || fireball.y > canvas.height + 50) {
+                    fireballs.splice(fireballIndex, 1);
+                    return;
+                }
+                
+                for (let obstacle of obstacles) {
+                    if (rectCollision(fireball, obstacle)) {
+                        createFireZone(fireball.x, fireball.y);
+                        fireballs.splice(fireballIndex, 1);
+                        return;
+                    }
+                }
+                
+                enemies.forEach((enemy, enemyIndex) => {
+                    if (rectCollision(fireball, enemy)) {
+                        enemy.health -= fireball.damage;
+                        createFireZone(fireball.x, fireball.y);
+                        fireballs.splice(fireballIndex, 1);
+                        
+                        if (enemy.health <= 0) {
+                            enemies.splice(enemyIndex, 1);
+                            score += enemy.armed ? 20 : 10;
+                            checkWeaponUnlocks();
+                        }
+                        
+                        bloodSplatters.push({
+                            x: enemy.x + enemy.width/2,
+                            y: enemy.y + enemy.height/2,
+                            size: Math.random() * 15 + 10,
+                            alpha: 1,
+                            decay: 0.008
+                        });
+                    }
+                });
+                
+                if (boss && rectCollision(fireball, boss)) {
+                    boss.health -= fireball.damage;
+                    createFireZone(fireball.x, fireball.y);
+                    fireballs.splice(fireballIndex, 1);
+                }
+            });
+            
+            // Update swords
+            swords.forEach((sword, swordIndex) => {
+                sword.x += sword.dx * deltaTime;
+                sword.y += sword.dy * deltaTime;
+                sword.angle += 5 * deltaTime;
+                
+                if (sword.x < -50 || sword.x > canvas.width + 50 || sword.y < -50 || sword.y > canvas.height + 50) {
+                    swords.splice(swordIndex, 1);
+                    return;
+                }
+                
+                enemies.forEach((enemy, enemyIndex) => {
+                    if (rectCollision(sword, enemy)) {
+                        createOmnidirectionBullets(
+                            enemy.x + enemy.width/2,
+                            enemy.y + enemy.height/2,
+                            50,
+                            16
+                        );
+                        
+                        enemies.splice(enemyIndex, 1);
+                        swords.splice(swordIndex, 1);
+                        score += enemy.armed ? 30 : 15;
+                        
+                        bloodSplatters.push({
+                            x: enemy.x + enemy.width/2,
+                            y: enemy.y + enemy.height/2,
+                            size: Math.random() * 15 + 10,
+                            alpha: 1,
+                            decay: 0.008
+                        });
+                    }
+                });
+                
+                if (boss && rectCollision(sword, boss)) {
+                    boss.health -= 200;
+                    createOmnidirectionBullets(
+                        boss.x + boss.width/2,
+                        boss.y + boss.height/2,
+                        30,
+                        20
+                    );
+                    swords.splice(swordIndex, 1);
+                }
+            });
+            
+            // Update bullets
+            bullets.forEach((bullet, bulletIndex) => {
+                bullet.x += bullet.dx * deltaTime;
+                bullet.y += bullet.dy * deltaTime;
+                
+                if (bullet.x < 0 || bullet.x > canvas.width || bullet.y < 0 || bullet.y > canvas.height) {
+                    bullets.splice(bulletIndex, 1);
+                    return;
+                }
+                
+                for (let obstacle of obstacles) {
+                    if (rectCollision(bullet, obstacle)) {
+                        bullets.splice(bulletIndex, 1);
+                        return;
+                    }
+                }
+                
+                if (bullet.fromPlayer) {
+                    enemies.forEach((enemy, enemyIndex) => {
+                        if (rectCollision(bullet, enemy)) {
+                            enemy.health -= bullet.damage;
+                            bullets.splice(bulletIndex, 1);
+                            
+                            bloodSplatters.push({
+                                x: enemy.x + enemy.width/2,
+                                y: enemy.y + enemy.height/2,
+                                size: Math.random() * 10 + 5,
+                                alpha: 1,
+                                decay: 0.01
+                            });
+                            
+                            if (enemy.health <= 0) {
+                                enemies.splice(enemyIndex, 1);
+                                score += enemy.armed ? 20 : 10;
+                                checkWeaponUnlocks();
+                            }
+                        }
+                    });
+                    
+                    if (boss && rectCollision(bullet, boss)) {
+                        boss.health -= bullet.damage;
+                        bullets.splice(bulletIndex, 1);
+                        
+                        bloodSplatters.push({
+                            x: bullet.x,
+                            y: bullet.y,
+                            size: Math.random() * 8 + 4,
+                            alpha: 1,
+                            decay: 0.012
+                        });
+                    }
+                }
+                
+                if (!bullet.fromPlayer) {
+                    if (rectCollision(bullet, player)) {
+                        player.health -= bullet.damage;
+                        bullets.splice(bulletIndex, 1);
+                        
+                        if (player.health <= 0) {
+                            gameOver();
+                        }
+                    }
+                }
+            });
+            
+            bloodSplatters.forEach((splatter, index) => {
+                splatter.alpha -= splatter.decay;
+                if (splatter.alpha <= 0) {
+                    bloodSplatters.splice(index, 1);
+                }
+            });
+        }
+        
+        // Render game
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw obstacles
+            ctx.fillStyle = '#444';
+            obstacles.forEach(obstacle => {
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                ctx.strokeStyle = '#666';
+                ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            });
+            
+            // Draw deletion zones
+            deletionZones.forEach(deletionZone => {
+                const elapsed = Date.now() - deletionZone.startTime;
+                const progress = elapsed / deletionZone.duration;
+                
+                ctx.globalAlpha = Math.max(0, 1 - progress);
+                const currentRadius = deletionZone.radius * (0.8 + progress * 0.4);
+                
+                const gradient = ctx.createRadialGradient(deletionZone.x, deletionZone.y, 0, deletionZone.x, deletionZone.y, currentRadius);
+                gradient.addColorStop(0, 'rgba(0, 150, 255, 0.9)');
+                gradient.addColorStop(0.5, 'rgba(0, 100, 255, 0.6)');
+                gradient.addColorStop(1, 'rgba(0, 50, 255, 0.1)');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(deletionZone.x, deletionZone.y, currentRadius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.9 * (1 - progress)})`;
+                ctx.beginPath();
+                ctx.arc(deletionZone.x, deletionZone.y, currentRadius * 0.4, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = `rgba(0, 200, 255, ${(1 - progress) * Math.sin(elapsed * 0.01)})`;
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(deletionZone.x, deletionZone.y, currentRadius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                ctx.strokeStyle = `rgba(0, 150, 255, ${1 - progress})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(deletionZone.x, deletionZone.y, currentRadius * 1.2, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+            ctx.globalAlpha = 1;
+            
+            // Draw fire zones
+            fireZones.forEach(fireZone => {
+                ctx.globalAlpha = 0.6;
+                const gradient = ctx.createRadialGradient(fireZone.x, fireZone.y, 0, fireZone.x, fireZone.y, fireZone.radius);
+                gradient.addColorStop(0, '#ff4500');
+                gradient.addColorStop(0.5, '#ff6500');
+                gradient.addColorStop(1, '#ff0000');
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(fireZone.x, fireZone.y, fireZone.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                
+                fireZone.particles.forEach(particle => {
+                    ctx.globalAlpha = particle.life;
+                    ctx.fillStyle = Math.random() > 0.5 ? '#ff4500' : '#ff0000';
+                    ctx.fillRect(particle.x - 2, particle.y - 2, 4, 4);
+                });
+                ctx.globalAlpha = 1;
+            });
+            
+            // Draw blood splatters
+            bloodSplatters.forEach(splatter => {
+                ctx.globalAlpha = splatter.alpha;
+                if (splatter.special) {
+                    ctx.fillStyle = '#0080ff';
+                } else {
+                    ctx.fillStyle = '#8B0000';
+                }
+                ctx.beginPath();
+                ctx.arc(splatter.x, splatter.y, splatter.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+            
+            // Draw boss
+            if (boss) {
+                ctx.fillStyle = boss.isSecondBoss ? '#4a0080' : '#800000';
+                ctx.fillRect(boss.x, boss.y, boss.width, boss.height);
+                
+                ctx.strokeStyle = boss.isSecondBoss ? '#8000ff' : '#ff0000';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(boss.x, boss.y, boss.width, boss.height);
+                
+                ctx.fillStyle = '#ffff00';
+                const eyeSize = boss.isSecondBoss ? 20 : 15;
+                const eyeOffset = boss.isSecondBoss ? 30 : 20;
+                ctx.fillRect(boss.x + eyeOffset, boss.y + eyeOffset, eyeSize, eyeSize);
+                ctx.fillRect(boss.x + boss.width - eyeOffset - eyeSize, boss.y + eyeOffset, eyeSize, eyeSize);
+                
+                const bossHealthPercent = boss.health / boss.maxHealth;
+                const healthBarWidth = boss.width + 40;
+                const healthBarHeight = 10;
+                
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(boss.x - 20, boss.y - 30, healthBarWidth, healthBarHeight);
+                ctx.fillStyle = '#00ff00';
+                ctx.fillRect(boss.x - 20, boss.y - 30, healthBarWidth * bossHealthPercent, healthBarHeight);
+                
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(boss.x - 20, boss.y - 30, healthBarWidth, healthBarHeight);
+            }
+            
+            // Draw scythe
+            if (scytheUnlocked) {
+                const scytheRadius = 60;
+                const playerCenterX = player.x + player.width/2;
+                const playerCenterY = player.y + player.height/2;
+                
+                ctx.save();
+                ctx.translate(playerCenterX, playerCenterY);
+                ctx.rotate(scytheAngle);
+                
+                // Draw scythe blade
+                ctx.strokeStyle = '#c0c0c0';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(0, 0, scytheRadius, -0.5, 0.5, false);
+                ctx.stroke();
+                
+                // Add glow effect
+                ctx.shadowColor = '#ffffff';
+                ctx.shadowBlur = 10;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, 0, scytheRadius, -0.5, 0.5, false);
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+                
+                ctx.restore();
+            }
+            
+            // Draw player
+            ctx.save();
+            ctx.translate(player.x + player.width/2, player.y + player.height/2);
+            ctx.rotate(player.angle);
+            
+            ctx.fillStyle = player.reloading ? '#666' : '#00ff40';
+            ctx.fillRect(-player.width/2, -player.height/2, player.width, player.height);
+            
+            if (player.weapon.special === 'sword') {
+                ctx.fillStyle = '#c0c0c0';
+                ctx.fillRect(player.width/2 - 2, -1, 20, 2);
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(player.width/2 - 8, -3, 6, 6);
+            } else if (player.weapon.special === 'fireball') {
+                ctx.fillStyle = '#ff4500';
+                ctx.fillRect(player.width/2 - 2, -3, 18, 6);
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(player.width/2 + 12, -2, 4, 4);
+            } else if (player.weapon.special === 'deletion') {
+                ctx.fillStyle = '#0080ff';
+                ctx.fillRect(player.width/2 - 2, -3, 25, 6);
+                const pulseIntensity = 0.5 + 0.5 * Math.sin(Date.now() * 0.01);
+                ctx.fillStyle = `rgba(255, 255, 255, ${pulseIntensity})`;
+                ctx.fillRect(player.width/2 + 18, -2, 4, 4);
+                ctx.shadowColor = '#0080ff';
+                ctx.shadowBlur = 10;
+                ctx.fillRect(player.width/2 + 18, -2, 4, 4);
+                ctx.shadowBlur = 0;
+            } else {
+                ctx.fillStyle = '#888';
+                ctx.fillRect(player.width/2 - 2, -2, 15, 4);
+            }
+            
+            ctx.restore();
+            
+            // Draw health bar
+            const healthBarWidth = 30;
+            const healthBarHeight = 4;
+            const healthPercent = player.health / player.maxHealth;
+            
+            ctx.fillStyle = '#ff0000';
+            ctx.fillRect(player.x, player.y - 10, healthBarWidth, healthBarHeight);
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(player.x, player.y - 10, healthBarWidth * healthPercent, healthBarHeight);
+            
+            // Draw enemies
+            enemies.forEach(enemy => {
+                if (Date.now() < enemySlowEndTime) {
+                    ctx.fillStyle = '#4040ff';
+                } else if (enemy.armed) {
+                    ctx.fillStyle = '#ff8000'; // Orange for armed enemies
+                } else {
+                    ctx.fillStyle = '#ff4040';
+                }
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                
+                // Armed enemy indicator (gun)
+                if (enemy.armed) {
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(enemy.x + enemy.width - 5, enemy.y + enemy.height/2 - 1, 8, 2);
+                }
+                
+                // Enemy health bar
+                const enemyHealthPercent = enemy.health / enemy.maxHealth;
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(enemy.x, enemy.y - 8, enemy.width, 3);
+                ctx.fillStyle = '#ffff00';
+                ctx.fillRect(enemy.x, enemy.y - 8, enemy.width * enemyHealthPercent, 3);
+            });
+            
+            // Draw bullets
+            bullets.forEach(bullet => {
+                if (bullet.special) {
+                    ctx.fillStyle = '#ff00ff';
+                    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                    
+                    ctx.shadowColor = '#ff00ff';
+                    ctx.shadowBlur = 10;
+                    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                    ctx.shadowBlur = 0;
+                } else if (bullet.boss) {
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                } else if (bullet.armed) {
+                    ctx.fillStyle = '#ff8000';
+                    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                } else {
+                    ctx.fillStyle = bullet.fromPlayer ? '#ffff00' : '#ff4040';
+                    ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+                }
+            });
+            
+            // Draw fireballs
+            fireballs.forEach(fireball => {
+                ctx.fillStyle = '#ff4500';
+                ctx.fillRect(fireball.x, fireball.y, fireball.width, fireball.height);
+                
+                ctx.shadowColor = '#ff4500';
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(fireball.x + 2, fireball.y + 2, fireball.width - 4, fireball.height - 4);
+                ctx.shadowBlur = 0;
+            });
+            
+            // Draw swords
+            swords.forEach(sword => {
+                ctx.save();
+                ctx.translate(sword.x + sword.width/2, sword.y + sword.height/2);
+                ctx.rotate(sword.angle);
+                
+                ctx.fillStyle = '#c0c0c0';
+                ctx.fillRect(-sword.width/2, -sword.height/2, sword.width, sword.height);
+                
+                ctx.fillStyle = '#8B4513';
+                ctx.fillRect(-2, sword.height/2 - 8, 4, 6);
+                
+                ctx.shadowColor = '#ffff00';
+                ctx.shadowBlur = 8;
+                ctx.fillStyle = '#c0c0c0';
+                ctx.fillRect(-sword.width/2, -sword.height/2, sword.width, sword.height);
+                ctx.shadowBlur = 0;
+                
+                ctx.restore();
+            });
+            
+            // Draw medkits
+            medkits.forEach(medkit => {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(medkit.x, medkit.y, medkit.width, medkit.height);
+                
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(medkit.x + medkit.width/2 - 2, medkit.y + 3, 4, medkit.height - 6);
+                
+                ctx.fillRect(medkit.x + 3, medkit.y + medkit.height/2 - 2, medkit.width - 6, 4);
+                
+                ctx.strokeStyle = '#cccccc';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(medkit.x, medkit.y, medkit.width, medkit.height);
+                
+                ctx.shadowColor = '#ffffff';
+                ctx.shadowBlur = 5;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(medkit.x, medkit.y, medkit.width, medkit.height);
+                ctx.shadowBlur = 0;
+            });
+            
+            // Update UI
+            document.getElementById('health').textContent = Math.max(0, player.health);
+            document.getElementById('score').textContent = score;
+            
+            if (player.weapon.special === 'sword' || player.weapon.special === 'fireball') {
+                document.getElementById('ammo').textContent = '∞';
+            } else if (player.weapon.special === 'deletion') {
+                const now = Date.now();
+                if (now < deletionCooldownEndTime) {
+                    const remaining = Math.ceil((deletionCooldownEndTime - now) / 1000);
+                    document.getElementById('ammo').textContent = `COOLDOWN: ${remaining}s`;
+                } else {
+                    document.getElementById('ammo').textContent = 'READY';
+                }
+            } else {
+                document.getElementById('ammo').textContent = player.reloading ? 'RELOADING...' : 
+                    player.weapon.ammo === -1 ? '∞' : player.weapon.ammo;
+            }
+        }
+        
+        // Game loop
+        function gameLoop(currentTime) {
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+            
+            update(deltaTime);
+            render();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function gameOver() {
+            gameRunning = false;
+            document.getElementById('finalScore').textContent = score;
+            
+            let isNewHighScore = false;
+            if (score > highScore) {
+                highScore = score;
+                document.getElementById('highScore').textContent = highScore;
+                document.getElementById('newHighScore').style.display = 'block';
+                isNewHighScore = true;
+            } else {
+                document.getElementById('newHighScore').style.display = 'none';
+            }
+            
+            document.getElementById('gameOver').style.display = 'block';
+        }
+        
+        function restartGame() {
+            gameRunning = true;
+            player.health = healthUpgraded ? 1000 : 100;
+            player.maxHealth = healthUpgraded ? 1000 : 100;
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            currentWeaponIndex = 0;
+            player.weapon = { ...weapons[0] };
+            player.reloading = false;
+            player.shooting = false;
+            enemies = [];
+            bullets = [];
+            swords = [];
+            fireballs = [];
+            fireZones = [];
+            deletionZones = [];
+            bloodSplatters = [];
+            medkits = [];
+            score = 0;
+            lastScoreCheck = 0;
+            bossSpawned = false;
+            secondBossSpawned = false;
+            boss = null;
+            dialogueActive = false;
+            enemySlowEndTime = 0;
+            deletionCooldownEndTime = 0;
+            scytheAngle = 0;
+            gameStartTime = Date.now();
+            lastMedkitSpawn = Date.now();
+            
+            // Reset weapon unlocks (but keep health upgrade and scythe)
+            for (let i = 1; i < weapons.length; i++) {
+                weapons[i].unlocked = false;
+                document.getElementById(`weapon${i}`).disabled = true;
+                if (i >= 6) {
+                    document.getElementById(`weapon${i}`).style.display = 'none';
+                }
+            }
+            
+            // Reset UI
+            document.querySelectorAll('#weaponSelector button').forEach((btn, i) => {
+                btn.classList.toggle('selected', i === 0);
+                btn.classList.remove('secret', 'fireball', 'deletion');
+            });
+            
+            // Keep scythe status if unlocked
+            if (scytheUnlocked) {
+                document.getElementById('scytheStatus').style.display = 'block';
+            }
+            
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('bossHealthDisplay').style.display = 'none';
+            document.getElementById('dialogue').style.display = 'none';
+            generateObstacles();
+        }
+        
+        // Event listeners
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key.toLowerCase() === 'r') reload();
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+            
+            crosshair.style.left = (e.clientX - 10) + 'px';
+            crosshair.style.top = (e.clientY - 10) + 'px';
+        });
+        
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && !dialogueActive) {
+                player.shooting = true;
+                shoot();
+            }
+        });
+        
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 0) {
+                player.shooting = false;
+            }
+        });
+        
+        // Auto-fire for automatic weapons
+        setInterval(() => {
+            if (player.shooting && player.weapon.auto && gameRunning && !dialogueActive && player.weapon.special !== 'deletion') {
+                shoot();
+            }
+        }, 50);
+        
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+        
+        // Initialize game
+        gameStartTime = Date.now();
+        lastMedkitSpawn = Date.now();
+        generateObstacles();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
